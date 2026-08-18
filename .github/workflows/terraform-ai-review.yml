@@ -35,6 +35,12 @@ jobs:
         run: |
           terraform version
 
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v5
+
+      - name: TFLint version
+        run: tflint --version
+
       - name: Terraform Format Check
         working-directory: terraform
         run: terraform fmt -check -recursive
@@ -46,6 +52,13 @@ jobs:
       - name: Terraform Validate
         working-directory: terraform
         run: terraform validate
+
+      - name: TFLint
+        working-directory: terraform
+        run: |
+          tflint --init
+          tflint --format json
+          tflint --format compact
 
       - name: Terraform Plan
         working-directory: terraform
