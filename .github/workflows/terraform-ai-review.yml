@@ -6,10 +6,8 @@ on:
       - opened
       - synchronize
       - reopened
-    paths:
-      - '**/*.tf'
-      - '**/*.tfvars'
-      - '**/*.hcl'
+
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -23,7 +21,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Show changed Terraform files
+      - name: Show changed files
         run: |
           echo "Terraform AI Reviewer started"
           echo "PR: ${{ github.event.pull_request.number }}"
