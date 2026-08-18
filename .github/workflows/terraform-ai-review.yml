@@ -1,0 +1,35 @@
+name: Terraform AI Reviewer
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+    paths:
+      - '**/*.tf'
+      - '**/*.tfvars'
+      - '**/*.hcl'
+
+permissions:
+  contents: read
+
+jobs:
+  terraform-review:
+    name: Terraform Review
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Show changed Terraform files
+        run: |
+          echo "Terraform AI Reviewer started"
+          echo "PR: ${{ github.event.pull_request.number }}"
+          echo "Base branch: ${{ github.event.pull_request.base.ref }}"
+          echo "Head branch: ${{ github.event.pull_request.head.ref }}"
+
+      - name: Check Terraform installation
+        run: |
+          terraform version
