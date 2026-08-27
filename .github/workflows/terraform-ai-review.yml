@@ -95,7 +95,7 @@ jobs:
         run: terraform plan -no-color > tf_plan_output.txt
 
       - name: Run Generic AI Code Reviewer
-        uses: saloni-0212/terraform-python-reviewer@terraform-python-reviewer
+        uses: saloni-0212/terraform-python-reviewer@terraform-python-review
         with:
           openai_api_key: ${{ secrets.OPENAI_API_KEY }}
           github_token: ${{ secrets.GHP_SECRET_TOKEN }}
