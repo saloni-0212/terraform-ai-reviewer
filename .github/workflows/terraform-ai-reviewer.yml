@@ -1,6 +1,10 @@
 name: Terraform AI Reviewer
 
 on:
+  push:
+    branches:
+      - '**'
+      
   pull_request:
     types:
       - opened
@@ -99,5 +103,4 @@ jobs:
         with:
           openai_api_key: ${{ secrets.OPENAI_API_KEY }}
           github_token: ${{ secrets.GHP_SECRET_TOKEN }}
-          plan_path: terraform/tf_plan_output.txt
-          
+          plan_path: terraform/tf_plan_output.txt  
