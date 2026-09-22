@@ -1,10 +1,6 @@
 name: Terraform AI Reviewer
 
-on:
-  push:
-    branches:
-      - '**'
-      
+on:      
   pull_request:
     types:
       - opened
@@ -14,8 +10,9 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
   pull-requests: write
+  statuses: write
+  contents: read
 
 jobs:
   terraform-review:
@@ -102,5 +99,5 @@ jobs:
         uses: asthasharma-tenarai/terraform-ai-reviewer-action@features/reviewer-action
         with:
           openai_api_key: ${{ secrets.OPENAI_API_KEY }}
-          github_token: ${{ secrets.GHP_SECRET_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           plan_path: terraform/tf_plan_output.txt  
