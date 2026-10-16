@@ -1,56 +1,54 @@
 
 Terraform will perform the following actions:
 
-  # aws_db_instance.db must be replaced
--/+ resource "aws_db_instance" "db" {
-      ~ allocated_storage       = 20 -> 100
-      ~ db_name                 = "appdb" -> "productiondb"
-      ~ engine_version          = "15.5" -> "16.4"
-      ~ instance_class          = "db.t3.medium" -> "db.r6g.2xlarge"
-      ~ multi_az                = false -> true
-      ~ publicly_accessible     = true -> false
-      ~ storage_type            = "gp2" -> "gp3"
-      ~ identifier              = "test-db" -> "production-db" # forces replacement
-      ...
+  # aws_db_instance.app will be updated in-place
+  ~ resource "aws_db_instance" "app" {
+      ~ deletion_protection       = true -> false
+      ~ backup_retention_period   = 30 -> 1
+      ~ monitoring_interval       = 60 -> 0
+      ~ storage_encrypted         = true -> true
+      # (other unchanged attributes hidden)
     }
 
-  # aws_instance.web will be updated in-place
-  ~ resource "aws_instance" "web" {
-      ~ instance_type = "t3.large" -> "m7i.4xlarge"
-      ...
+  # aws_iam_policy.app_access will be updated in-place
+  ~ resource "aws_iam_policy" "app_access" {
+      ~ policy = jsonencode({
+          ~ Statement = [
+              {
+                Effect   = "Allow"
+                Action   = ["s3:GetObject"]
+                Resource = ["arn:aws:s3:::app-data/*"]
+              },
+            + {
+                Effect   = "Allow"
+                Action   = ["*"]
+                Resource = ["*"]
+              },
+          ]
+        })
     }
 
-  # aws_security_group.web will be destroyed
-  - resource "aws_security_group" "web" {
-      name        = "web-sg"
-      description = "Web security group"
-      ...
+  # aws_autoscaling_group.app will be updated in-place
+  ~ resource "aws_autoscaling_group" "app" {
+      ~ min_size         = 3 -> 1
+      ~ desired_capacity = 3 -> 1
+      ~ max_size         = 6 -> 6
     }
 
-  # aws_security_group.web_new will be created
-  + resource "aws_security_group" "web_new" {
-      name        = "web-sg-new"
-      description = "Replacement security group"
-      ...
+  # aws_instance.worker will be updated in-place
+  ~ resource "aws_instance" "worker" {
+      ~ monitoring = true -> false
+      ~ instance_type = "m6i.large" -> "m6i.large"
     }
 
-  # aws_subnet.public must be replaced
--/+ resource "aws_subnet" "public" {
-      ~ cidr_block = "10.0.1.0/24" -> "10.0.10.0/24"
-      ~ availability_zone = "us-east-2a" -> "us-east-2b"
-      ...
+  # aws_lb_target_group.app will be updated in-place
+  ~ resource "aws_lb_target_group" "app" {
+      ~ health_check {
+          ~ healthy_threshold   = 3 -> 2
+          ~ unhealthy_threshold = 3 -> 10
+          ~ interval            = 30 -> 60
+          ~ timeout             = 5 -> 10
+        }
     }
 
-  # aws_s3_bucket.logs will be destroyed
-  - resource "aws_s3_bucket" "logs" {
-      bucket = "terraform-test-logs"
-      ...
-    }
-
-  # aws_s3_bucket.logs_new will be created
-  + resource "aws_s3_bucket" "logs_new" {
-      bucket = "terraform-production-logs"
-      ...
-    }
-
-Plan: 3 to add, 1 to change, 3 to destroy.
+Plan: 0 to add, 5 to change, 0 to destroy.
