@@ -1,1 +1,195 @@
-# terraform-ai-reviewer
+# Terraform AI PR Reviewer
+
+An AI-powered Terraform review solution that helps teams identify infrastructure risks, security misconfigurations, potential cost optimizations, and architecture improvements before merging pull requests.
+
+## Business Problem
+
+Infrastructure changes can introduce security vulnerabilities, unexpected cloud costs, reliability issues, and potentially destructive resource changes. Traditional validation and linting tools are useful, but they do not always provide contextual explanations of risks or actionable recommendations.
+
+The Terraform AI PR Reviewer integrates into the pull request workflow to provide contextual feedback on infrastructure changes, helping developers make safer and more informed decisions before merging.
+
+## How It Works
+
+The GitHub Actions workflow automates the Terraform review process:
+
+1. **Checkout:** Retrieves the repository code.
+2. **Terraform setup:** Installs and configures Terraform.
+3. **Formatting and validation:** Checks Terraform formatting, initialization, and configuration validity.
+4. **Linting:** Runs TFLint to identify potential Terraform issues.
+5. **AI review:** Analyzes Terraform configuration and, when available, the Terraform plan to identify risks and recommend improvements.
+6. **Pull request feedback:** Publishes review findings and recommendations to help developers investigate issues before merging.
+
+The workflow can run when a pull request is opened, updated with new commits, or reopened.
+
+## Prerequisites
+
+- A GitHub repository containing Terraform configuration.
+- GitHub Actions enabled for the repository.
+- Terraform CLI.
+- TFLint.
+- An OpenAI API key.
+- A GitHub token with the permissions required to publish review feedback.
+- Access to the reusable Terraform AI Reviewer GitHub Action.
+
+## Setup
+
+### 1. Configure GitHub Secrets
+
+In your consuming repository, navigate to **Settings → Secrets and variables → Actions** and configure:
+
+| Secret | Purpose |
+|---|---|
+| `OPENAI_API_KEY` | Enables AI-powered Terraform analysis. |
+| `GHP_SECRET_TOKEN` | Allows the reviewer to access pull request information and publish feedback. |
+
+Use a token with only the permissions required by your workflow.
+
+### 2. Configure the GitHub Actions Workflow
+
+Create a workflow file at `.github/workflows/terraform-ai-reviewer.yml`.
+
+Example configuration:
+
+```yaml
+name: Terraform AI Reviewer
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  terraform-review:
+    name: Terraform Review
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v5
+
+      - name: Terraform Format Check
+        working-directory: terraform
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init -backend=false
+
+      - name: Terraform Validate
+        working-directory: terraform
+        run: terraform validate
+
+      - name: Run TFLint
+        working-directory: terraform
+        run: |
+          tflint --init
+          tflint
+
+      - name: Run Terraform AI Reviewer
+        uses: asthasharma-tenarai/terraform-ai-reviewer-action@features/reviewer-action
+        with:
+          openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+          github_token: ${{ secrets.GHP_SECRET_TOKEN }}
+          plan_path: terraform/tf_plan_output.txt
+```
+
+**Important:** This example assumes your Terraform configuration is under the `terraform/` directory and that the reusable action receives a plan file at the specified path. Add a Terraform plan step before the AI reviewer if your implementation requires a plan file and does not generate one itself. Configure backend access and provider credentials as appropriate for your environment.
+
+For the latest reusable action implementation, see the [Terraform AI Reviewer Action](https://github.com/asthasharma-tenarai/terraform-ai-reviewer-action/tree/features/reviewer-action).
+
+### 3. Open a Pull Request
+
+Create a feature branch, make a Terraform change, and open a pull request. The workflow will run the configured checks and invoke the AI reviewer.
+
+Review the workflow logs and pull request feedback to understand the findings and suggested improvements.
+
+## Review Capabilities
+
+The reviewer is designed to help identify:
+
+- **Security:** Publicly exposed services, overly permissive access, and insecure configuration.
+- **Dangerous changes:** Resource deletion, replacement, and changes that may cause downtime or data loss.
+- **Cost optimization:** Potentially oversized resources and opportunities to reduce cloud expenditure.
+- **Architecture:** Reliability, scalability, resilience, and infrastructure design improvements.
+- **Suggested fixes:** Actionable recommendations for improving Terraform configuration.
+
+Findings depend on the Terraform code, plan information, and capabilities enabled in the current implementation.
+
+## Promised vs. Built
+
+| Area | Intended capability | Implementation status |
+|---|---|---|
+| Terraform validation | Validate Terraform configuration before review | Implemented in the workflow |
+| Terraform linting | Identify common Terraform issues | Implemented using TFLint |
+| AI-powered review | Analyze infrastructure changes and provide contextual recommendations | Implemented |
+| Security review | Highlight potential security misconfigurations | Implemented |
+| Dangerous-change analysis | Identify potentially destructive or replacement operations from plan information | Supported when plan information is available |
+| Cost recommendations | Suggest potential cloud cost optimizations | Implemented as AI recommendations |
+| Architecture review | Recommend reliability and design improvements | Implemented as AI recommendations |
+| PR feedback | Publish findings to the pull request | Implemented |
+| Developer feedback memory | Remember accepted or rejected suggestions across future reviews | Planned |
+| Automated fixes | Generate and apply approved Terraform patches | Planned |
+| Repository-specific policies | Apply team-defined rules and exceptions | Planned |
+| Extended provider support | Expand contextual reviews across cloud providers | Future enhancement |
+
+*Status reflects the intended current project scope; verify each capability against the deployed workflow and action version before release.*
+
+## Environment Variables and Secrets
+
+The workflow uses GitHub Actions secrets for sensitive values rather than committing credentials to source control.
+
+If local development requires environment variables, use `.env.example` as a template:
+
+```dotenv
+# OpenAI API key for AI-powered review
+OPENAI_API_KEY=
+
+# GitHub token for pull request review operations
+GITHUB_TOKEN=
+
+# Optional path to a Terraform plan output file
+PLAN_PATH=terraform/tf_plan_output.txt
+```
+
+Copy the template to `.env` when needed and populate it locally. Ensure `.env` is excluded from version control. Never commit real API keys, access tokens, passwords, or other secrets.
+
+The GitHub Actions workflow should continue to use repository or organization secrets for CI execution.
+
+## Team
+
+- **Astha Sharma**
+- **Saloni Agrawal**
+
+## Future Scope
+
+- Developer feedback memory that uses accepted and rejected findings as context for future reviews.
+- Approval-based Terraform fix generation.
+- Repository- and team-specific review policies.
+- Improved risk scoring and infrastructure dependency analysis.
+- Expanded multi-cloud and provider support.
+- More detailed reporting and review analytics.
+
+## Security Considerations
+
+- Do not expose API keys or GitHub tokens in logs.
+- Use least-privilege GitHub token permissions.
+- Review AI-generated recommendations before applying them.
+- Validate Terraform changes and review the resulting plan before deployment.
+- Do not treat AI feedback as a replacement for security controls, policy enforcement, or human review.
+
+## License
+
+Add the applicable project license here.

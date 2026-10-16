@@ -1,6 +1,6 @@
 name: Terraform AI Reviewer
 
-on:
+on:      
   pull_request:
     types:
       - opened
@@ -10,8 +10,9 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
   pull-requests: write
+  statuses: write
+  contents: read
 
 jobs:
   terraform-review:
@@ -66,14 +67,14 @@ jobs:
           name: tflint-report
           path: terraform/tflint.json
 
-      - name: Run Checkov
-        uses: bridgecrewio/checkov-action@v12
-        with:
-          directory: terraform
-          framework: terraform
-          output_format: json
-          output_file_path: checkov.json
-          soft_fail: true
+      # - name: Run Checkov
+      #   uses: bridgecrewio/checkov-action@v12
+      #   with:
+      #     directory: terraform
+      #     framework: terraform
+      #     output_format: json
+      #     output_file_path: checkov.json
+      #     soft_fail: true
 
       # - name: Terraform Plan
       #   working-directory: terraform
@@ -90,14 +91,13 @@ jobs:
       #     ls -lh tfplan
       #     ls -lh tfplan.json
 
-      - name: Terraform Plan
-        working-directory: terraform
-        run: terraform plan -no-color > tf_plan_output.txt
+      # - name: Terraform Plan
+      #   working-directory: terraform
+      #   run: terraform plan -no-color > tf_plan_output.txt
 
       - name: Run Generic AI Code Reviewer
-        uses: saloni-0212/terraform-python-reviewer@terraform-python-review
+        uses: asthasharma-tenarai/terraform-ai-reviewer-action@features/reviewer-action
         with:
           openai_api_key: ${{ secrets.OPENAI_API_KEY }}
-          github_token: ${{ secrets.GHP_SECRET_TOKEN }}
-          plan_path: terraform/tf_plan_output.txt
-          
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          plan_path: terraform/tf_plan_output.txt  
