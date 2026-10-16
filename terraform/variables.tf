@@ -27,4 +27,3 @@ variable "log_level" {
   type        = string
   default     = "DEBUG"
 }
-
